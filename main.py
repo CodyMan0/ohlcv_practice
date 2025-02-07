@@ -1,81 +1,37 @@
-## exists Private && Public
+import ccxt
+import pandas_example as pd
+import os
 
+# 📌 거래소 설정 (Binance)
+exchange = ccxt.binance()
 
+# 📌 심볼 및 타임프레임 설정
+symbol = "BTC/USDT"
+timeframe = "1h"  # 1시간 봉 데이터를 가져옴
+limit = 1000  # 가져올 캔들 수
 
-import datetime
-import json
-import time
-from time import sleep
-from turtledemo.penrose import start
+# 📌 1시간 봉 데이터 가져오기
+ohlcv = exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
+df = pd.DataFrame(ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"])
+df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
 
-import ccxt.pro as ccxtpro
-import asyncio
-import pandas as pd
+# 📌 원하는 시간대 필터링 (5시, 9시, 13시, 15시, 19시)
+hours = [5, 9, 13, 17, 21, 1]
+df["hour"] = df["timestamp"].dt.hour  # 시(hour) 추출
+df_filtered = df[df["hour"].isin(hours)]
 
-# 교환소 설정
+# 📌 4시간 봉으로 변환 (OHLCV 계산)
+df_grouped = df_filtered.resample("4h", on="timestamp").agg({
+    "open": "first",
+    "high": "max",
+    "low": "min",
+    "close": "last",
+    "volume": "sum"
+}).dropna().reset_index()
 
+# 📌 CSV 파일 저장
+output_filename = "filtered_4h_data.csv"
+df_grouped.to_csv(output_filename, index=False, encoding="utf-8-sig")
 
-#
-# 데이터 설정
-# symbol = 'BTC/USDT'  # 비트코인 대 USDT
-# timeframe = '1d'     # 일별 데이터
-# since = exchange.parse8601('1 year ago UTC')  # 1년 전부터 현재까지
-#
-# # 데이터 수집
-symbols = list()
+print(f"✅ 4시간 봉 데이터가 {output_filename} 파일로 저장되었습니다.")
 
-def get_top_20_by_volume_1:
-    pass
-
-def get_top_20_by_volume_1:
-    pass
-
-
-async def test() :
-    exchange = ccxtpro.binance({
-        "enableRateLimit": True,
-        "options": {
-            "defaultType": "future",
-            "recvWindow": 50000,
-            "adjustForTimeDifference": True,
-            "warnOnFetchOpenOrdersWithoutSymbol": False
-        }
-    })
-    ohlcv = await exchange.fetch_tickers()
-    with open("data.txt", "w") as file:
-        file.write(json.dumps(ohlcv))
-    ticker_detials = json.dumps(ohlcv)
-    print(len(ticker_detials))
-    for symbol, ticker_detail in ohlcv.items():
-        # if symbol.split(":")[-1].lower() == "usdt":
-        #     continue
-        # if "USDT" in symbol :
-        #     continue
-        # print(ticker_detail)
-        symbols.append(symbol)
-        for symbol in symbols:
-            print(symbol)
-        print(len(symbols))
-
-    await exchange.close()
-
-    start_time = time.time()
-
-    finish_time = time.time()
-    print(f"elapsed: {finish_time - start_time}")
-    return
-
-
-# # Pandas 데이터프레임으로 변환
-# df = pd.DataFrame(ohlcv, columns=['Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume'])
-# df['Date'] = pd.to_datetime(df['Timestamp'], unit='ms')
-# df.set_index('Date', inplace=True)
-# del df['Timestamp']
-#
-# # CSV 파일로 저장
-# df.to_csv("bitcoin_ohlcv.csv")
-
-# 내장된 객체?
-if __name__ == "__main__":
-    asyncio.run(test())
-    print('hello')
